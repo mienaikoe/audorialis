@@ -31,7 +31,7 @@ Audorialis.prototype.acquireDomControls = function(){
 		mute: document.getElementById("mute"),
 		file: document.getElementById("file")
 	};
-	
+	this.playlist = document.getElementById("playlist");
 	
 	var self = this;
 	this.controls.play.onclick = function(){
@@ -62,12 +62,12 @@ Audorialis.prototype.acquireDomControls = function(){
 
 
 Audorialis.prototype.instantiateAudioSystem = function(){
-	this.ctx = new AudioContext();	
-	this.nyquist = this.ctx.sampleRate/2;
+	this.ctx = new AudioContext();
 	
 	this.musicSource = this.ctx.createBufferSource();
 	this.leftOff = 0;
 	this.analyser = this.ctx.createAnalyser();
+	this.analyser.fftSize = 256;
 	this.gain = this.ctx.createGainNode();
 	this.gain.gain.value = 0.5;
 	
@@ -80,7 +80,7 @@ Audorialis.prototype.instantiateAudioSystem = function(){
 
 
 
-Audorialis.prototype.fetchMusicSource = function( url ){
+Audorialis.prototype.fetchMusicSource = function( url ){	
 	var self = this;
 	
     var request = new XMLHttpRequest();
@@ -92,6 +92,9 @@ Audorialis.prototype.fetchMusicSource = function( url ){
             function(buffer) { 
 				self.buffer = buffer;
 				self.musicSource.buffer = buffer;
+				self.playlist.innerHTML = url;
+				self.stop();
+				self.leftOff = 0;
             },
             function() { 
 				alert(url+" Is Invalid. Please Try Again"); 
@@ -115,12 +118,21 @@ Audorialis.prototype.parseMusicSource = function( file ){
 			function(buffer){
 				self.buffer = buffer;
 				self.musicSource.buffer = buffer;
+				self.playlist.innerHTML = file.name;
+				self.stop();
+				self.leftOff = 0;
 			},
 			function(){
 				alert(file.name+" Is Invalid. Please Try Again"); 
 			});
 	};
-    reader.readAsArrayBuffer(file);
+	
+	try{
+		reader.readAsArrayBuffer(file);
+	} catch(err) { 
+		alert(url+" Is Invalid. Please Try Again"); 
+	}
+    
 };
 
 
@@ -177,20 +189,24 @@ Audorialis.prototype.readyToPlay = function(){
 
 
 Audorialis.prototype.play = function(){
-	if( !this.readyToPlay() ){ return; }
-	this.playing = true;
-	this.musicSource.start(0, this.leftOff);
-	requestAnimationFrame(this.frame.bind(this));
+	if( !this.playing ){
+		if( !this.readyToPlay() ){ return; }
+		this.playing = true;
+		this.musicSource.start(0, this.leftOff);
+		requestAnimationFrame(this.frame.bind(this));
+	}
 };
 
 Audorialis.prototype.stop = function(){
-	this.playing = false;
-	this.musicSource.stop(0);
-	this.musicSource.disconnect(0);
-	
-	this.musicSource = this.ctx.createBufferSource();
-	this.musicSource.buffer = this.buffer;
-	this.musicSource.connect(this.analyser);
+	if( this.playing ){
+		this.playing = false;
+		this.musicSource.stop(0);
+		this.musicSource.disconnect(0);
+
+		this.musicSource = this.ctx.createBufferSource();
+		this.musicSource.buffer = this.buffer;
+		this.musicSource.connect(this.analyser);
+	}
 };
 
 Audorialis.prototype.frame = function( timestamp ){
@@ -221,11 +237,16 @@ Audorialis.prototype.frame = function( timestamp ){
 
 var AudioMather = function( analyser ){
 	this.analyser = analyser;
-	this.timeDomain = new Uint8Array(analyser.frequencyBinCount);
-	this.freqDomain = new Uint8Array(analyser.frequencyBinCount);
+	this.nyquist = analyser.context.sampleRate/2;
+	
+	this.timeCap = analyser.fftSize;
+	this.timeDomain = new Uint8Array(this.timeCap);
+	
+	this.frequencyCap = analyser.frequencyBinCount;
+	this.frequencyDomain = new Uint8Array(this.frequencyCap);
 };
 AudioMather.prototype.getFrequencyDomain = function(){
-	this.analyser.getByteFrequencyDomainData(this.frequencyDomain);
+	this.analyser.getByteFrequencyData(this.frequencyDomain);
 	return this.frequencyDomain;
 };
 AudioMather.prototype.getTimeDomain = function(){

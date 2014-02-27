@@ -14,11 +14,23 @@ body{
     color: white;
 }
 
+#playlist{
+    font-weight: 100;
+    font-size: 32px;
+    position: fixed;
+    top: 20px;
+    right: 10px;
+    color: white;
+    font-family: Mojave, sans-serif;
+}
+
+
 #controls{
     position: fixed;
-    bottom: 100px;
+    bottom: 20px;
     left: 0px;
     right: 0px;
+    z-index: 3;
 }
 
 .central{
@@ -26,8 +38,8 @@ body{
 }
 
 #controls #panel{
-    background-color: #444;
-    border: 1px solid #333;
+    background-color: #333;
+    border: 1px solid #111;
     /*border-radius: 10px;*/
     min-width: 150px;
     width: 80%;
@@ -41,7 +53,7 @@ body{
     vertical-align: middle;
     height: 25px;
     line-height: 25px;
-    font-size: 20px;
+    font-size: 25px;
     margin: 0px 5px;
     color: #ddd;
     font-weight: bold;
@@ -54,12 +66,22 @@ body{
 
 #controls #panel .control#play{
     width: 25px;
+    float: left;
 }
 
 #controls #panel .control#gain{
     width: 50px;
+    float: left;
 }
 
 #controls #panel .control#mute{
     width: 25px;
+    float: left;
+}
+
+#controls #panel .control#file{
+    width: 91px;
+    float: right;
+    font-size: 13px;
+    font-weight: normal;
 }
