@@ -79,9 +79,53 @@ body{
     float: left;
 }
 
-#controls #panel .control#file{
-    width: 91px;
+#controls #panel .control#path{
+    width: 93px;
     float: right;
     font-size: 13px;
     font-weight: normal;
+    color: black;
+    padding: 0px;
+    height: 22px;
+    line-height: 18px;
+    margin-top:1px;
+    cursor: default;
+}
+
+#controls #panel .control#file{
+    width: 93px;
+    float: right;
+    font-size: 13px;
+    font-weight: normal;
+}
+
+
+
+#urlPop{
+    position: fixed;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 7;
+    background-color: rgba(0,0,0,0.5);
+    display: none;
+}
+
+#urlForm{
+    padding: 10px;
+    background-color: #333;
+    margin: 15% auto;
+    width: 70%;
+    color: white;
+}
+
+#urlInput{
+    display:inline-block;
+    margin-right: 10px;
+    width: 80%;
+}
+
+#urlSubmit{
+    display:inline-block;
 }

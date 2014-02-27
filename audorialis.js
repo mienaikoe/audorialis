@@ -29,7 +29,8 @@ Audorialis.prototype.acquireDomControls = function(){
 		play: document.getElementById("play"),
 		gain: document.getElementById("gain"),
 		mute: document.getElementById("mute"),
-		file: document.getElementById("file")
+		file: document.getElementById("file"),
+		path: document.getElementById("path")
 	};
 	this.playlist = document.getElementById("playlist");
 	
@@ -57,6 +58,18 @@ Audorialis.prototype.acquireDomControls = function(){
 	};
 	this.controls.file.onchange = function(){
 		self.parseMusicSource(this.files[0]);
+	};
+	
+	var urlPop = document.getElementById("urlPop");
+	urlPop.onclick = function(){ urlPop.style.display = 'none'; };
+	document.getElementById("urlForm").onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); return false; };
+	var urlInput = document.getElementById("urlInput");
+	document.getElementById("urlSubmit").onclick = function(ev){ 
+		self.fetchMusicSource(urlInput.value);
+		urlPop.style.display = 'none';
+	};
+	this.controls.path.onclick = function(){
+		urlPop.style.display = 'block';
 	};
 };
 
