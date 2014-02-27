@@ -1,0 +1,65 @@
+body{
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
+    background-color: black;
+}
+
+#visualiser{
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    color: white;
+}
+
+#controls{
+    position: fixed;
+    bottom: 100px;
+    left: 0px;
+    right: 0px;
+}
+
+.central{
+    margin: 0px auto;
+}
+
+#controls #panel{
+    background-color: #444;
+    border: 1px solid #333;
+    /*border-radius: 10px;*/
+    min-width: 150px;
+    width: 80%;
+    height: 25px;
+    padding: 10px;
+    text-align: center;
+}
+
+#controls .control{
+    display: inline-block;
+    vertical-align: middle;
+    height: 25px;
+    line-height: 25px;
+    font-size: 20px;
+    margin: 0px 5px;
+    color: #ddd;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#controls .control:hover{
+    color: #fff;
+}
+
+#controls #panel .control#play{
+    width: 25px;
+}
+
+#controls #panel .control#gain{
+    width: 50px;
+}
+
+#controls #panel .control#mute{
+    width: 25px;
+}

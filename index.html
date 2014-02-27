@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Audorialis</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script type="text/javascript" src="audorialis.js"></script>
+        <link rel="stylesheet" type="text/css" href="audorialis.css"/>
+    </head>
+    <body>
+        <div id="visualiser"></div>
+        <div id="controls">
+            <div id="panel" class="central">
+                <div id="play" class="control">&#9654;</div>
+                <input id="gain" class="control" type="range" min="0" max="1" step="0.05"/> 
+                <div id="mute" class="control">&#9635;</div>
+                <input id="file" class="control" type="file"></input>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var audorialis = null;
+            document.addEventListener( "DOMContentLoaded", function(){
+    		document.removeEventListener( "DOMContentLoaded", arguments.callee, false );
+    		audorialis = new Audorialis();
+            }, false );
+        </script>
+    </body>
+</html>
