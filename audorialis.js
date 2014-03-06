@@ -19,7 +19,14 @@ if( !window.requestAnimationFrame || !window.AudioContext ){
 var Audorialis = function(){
 	this.acquireDomControls();
 	this.instantiateAudioSystem();
-	this.fetchMusicSource('music/Seabound.mp3');
+	
+	var lastSong = localStorage.getItem("lastSong");
+	if( lastSong ){
+		this.fetchMusicSource(lastSong);
+	} else {
+		this.fetchMusicSource('music/Seabound.mp3');
+	}
+	
 	this.setVisualiser('Basic');
 };
 
@@ -36,11 +43,7 @@ Audorialis.prototype.acquireDomControls = function(){
 	
 	var self = this;
 	this.controls.play.onclick = function(){
-		if( self.playing ){
-			self.stop();
-		} else {
-			self.play();
-		}
+		self.playpause();
 	};
 	this.controls.gain.onchange = function(){
 		self.gain.gain.value = parseFloat(this.value);
@@ -57,7 +60,7 @@ Audorialis.prototype.acquireDomControls = function(){
 		self.controls.gain.onchange();
 	};
 	this.controls.file.onchange = function(){
-		self.parseMusicSource(this.files[0]);
+		self.parseMusicSource(this);
 	};
 	
 	var urlPop = document.getElementById("urlPop");
@@ -106,8 +109,11 @@ Audorialis.prototype.fetchMusicSource = function( url ){
 				self.buffer = buffer;
 				self.musicSource.buffer = buffer;
 				self.playlist.innerHTML = url;
-				self.stop();
+				if( self.playing ){
+					self.playpause();
+				}
 				self.leftOff = 0;
+				localStorage.setItem("lastSong", url);
             },
             function() { 
 				alert(url+" Is Invalid. Please Try Again"); 
@@ -122,7 +128,8 @@ Audorialis.prototype.fetchMusicSource = function( url ){
 	}
 };
 
-Audorialis.prototype.parseMusicSource = function( file ){
+Audorialis.prototype.parseMusicSource = function( inputel ){
+	var file = inputel.files[0];
 	var self = this;
 	var reader = new FileReader();
 	reader.onload = function() { 
@@ -131,8 +138,10 @@ Audorialis.prototype.parseMusicSource = function( file ){
 			function(buffer){
 				self.buffer = buffer;
 				self.musicSource.buffer = buffer;
-				self.playlist.innerHTML = file.name;
-				self.stop();
+				self.playlist.innerHTML = "<div>"+file.name+"</div>";
+				if( self.playing ){
+					self.playpause();
+				}
 				self.leftOff = 0;
 			},
 			function(){
@@ -143,7 +152,7 @@ Audorialis.prototype.parseMusicSource = function( file ){
 	try{
 		reader.readAsArrayBuffer(file);
 	} catch(err) { 
-		alert(url+" Is Invalid. Please Try Again"); 
+		alert(file+" Is Invalid. Please Try Again"); 
 	}
     
 };
@@ -153,12 +162,15 @@ Audorialis.prototype.parseMusicSource = function( file ){
 Audorialis.prototype.setCanvas = function(){
 	this.canvas = document.getElementById("canvas");
 	this.resizeCanvas();
-	window.addEventListener('resize', this.resizeCanvas, false);
+	window.addEventListener('resize', this.resizeCanvas.bind(this), false);
 };
 
 Audorialis.prototype.resizeCanvas = function(){
 	this.canvas.width = window.innerWidth;
 	this.canvas.height = window.innerHeight;
+	if( this.visualiser ){
+		this.visualiser.resize();
+	}
 };
 
 Audorialis.prototype.setVisualiser = function(handle){
@@ -170,6 +182,8 @@ Audorialis.prototype.setVisualiser = function(handle){
 		this.loadVisualiser(handle);
 	} else {
 		this.visualiser = new visualiserConstructor(this.canvas, this.audioMather);
+		this.animating=true;
+		this.frame(0);
 	}
 };
 
@@ -215,41 +229,38 @@ Audorialis.prototype.readyToPlay = function(){
 
 
 
-Audorialis.prototype.play = function(){
-	if( !this.playing ){
-		if( !this.readyToPlay() ){ return; }
-		this.playing = true;
-		this.musicSource.start(0, this.leftOff);
-		requestAnimationFrame(this.frame.bind(this));
-	}
-};
-
-Audorialis.prototype.stop = function(){
+Audorialis.prototype.playpause = function(){
 	if( this.playing ){
-		this.playing = false;
+		this.leftOff = this.leftOff + (this.ctx.currentTime - this.startCtxTime);
+		this.startCtxTime = null;
+		
 		this.musicSource.stop(0);
 		this.musicSource.disconnect(0);
 
 		this.musicSource = this.ctx.createBufferSource();
 		this.musicSource.buffer = this.buffer;
 		this.musicSource.connect(this.analyser);
+		
+		this.playing = false;
+	} else {
+		if( !this.readyToPlay() ){ return; }
+		this.musicSource.start(0, this.leftOff);
+		this.startCtxTime = this.ctx.currentTime;
+		
+		this.playing = true;
 	}
 };
 
 Audorialis.prototype.frame = function( timestamp ){
-	if( !this.playing ){
-		this.leftOff = this.leftOff + (this.ctx.currentTime - this.startCtxTime);
-		this.startCtxTime = null;
+	if( !this.animating ){
 		this.startTimestamp = null;
 		return;
 	}
 	if( !this.startTimestamp ){
-		this.startCtxTime = this.ctx.currentTime;
 	    this.startTimestamp = timestamp;
 	}
 	
 	this.visualiser.frame(timestamp);
-	
 	requestAnimationFrame(this.frame.bind(this));
 };
 
