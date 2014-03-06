@@ -26,8 +26,8 @@ Basic.COLOR_THEMES = {
 		[200,0,0]
 	],
 	ultraviolet: [
-		[180,30,255],
-		[100,20,255],
+		[210,60,255],
+		[110,20,255],
 		[50,10,255]
 	]
 };
@@ -63,9 +63,9 @@ Basic.prototype.frame = function(timestamp){
 	
 	var theme = Basic.COLOR_THEMES.ultraviolet;
 	this.line(0,0,this.maxRadius, "#000000");
-	this.line(0, -this.canvas.height*0.06,	1+forrad, this.rgba(theme[0][0],theme[0][1],theme[0][2],alpha));
+	this.line(0, -this.canvas.height*0.04,	1+forrad, this.rgba(theme[0][0],theme[0][1],theme[0][2],alpha));
 	this.line(0, -this.canvas.height*0.24,	1+tenrad, this.rgba(theme[1][0],theme[1][1],theme[2][2],alpha));
-	this.line(0, -this.canvas.height*0.48,	1+sixrad, this.rgba(theme[2][0],theme[2][1],theme[1][2],alpha));
+	this.line(0, -this.canvas.height*0.44,	1+sixrad, this.rgba(theme[2][0],theme[2][1],theme[1][2],alpha));
 	
 	
 	this.lastsum = sum;
