@@ -150,12 +150,26 @@ Audorialis.prototype.parseMusicSource = function( file ){
 
 
 
+Audorialis.prototype.setCanvas = function(){
+	this.canvas = document.getElementById("canvas");
+	this.resizeCanvas();
+	window.addEventListener('resize', this.resizeCanvas, false);
+};
+
+Audorialis.prototype.resizeCanvas = function(){
+	this.canvas.width = window.innerWidth;
+	this.canvas.height = window.innerHeight;
+};
+
 Audorialis.prototype.setVisualiser = function(handle){
+	if( !this.canvas ){
+		this.setCanvas();
+	}
 	var visualiserConstructor = window[handle];
 	if( !visualiserConstructor ){
 		this.loadVisualiser(handle);
 	} else {
-		this.visualiser = new visualiserConstructor(document.getElementById("visualiser"), this.audioMather);
+		this.visualiser = new visualiserConstructor(this.canvas, this.audioMather);
 	}
 };
 

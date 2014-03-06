@@ -1,17 +1,19 @@
+@font-face{
+    font-family: Simplifica;
+    src: url(Simplifica.ttf);
+}
+
 body{
     margin: 0px;
     padding: 0px;
     border: 0px;
+    width: 100%;
+    height: 100%;
     background-color: black;
 }
 
-#visualiser{
-    position: absolute;
-    top: 0px;
-    bottom: 0px;
-    left: 0px;
-    right: 0px;
-    color: white;
+#canvas{
+
 }
 
 #playlist{
@@ -21,7 +23,7 @@ body{
     top: 20px;
     right: 10px;
     color: white;
-    font-family: Mojave, sans-serif;
+    font-family: Simplifica;
 }
 
 
