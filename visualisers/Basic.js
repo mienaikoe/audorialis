@@ -6,16 +6,32 @@ function Basic(canvas, mather){
 	this.mather = mather;
 	
 	this.twopi = 2 * Math.PI;
-	var cap=this.mather.frequencyCap/12;
-	this.bluecap = cap;
-	this.greencap = cap*4;
+	var cap=this.mather.frequencyCap/24;
+	this.bluecap = cap*5;
+	this.greencap = cap*11;
 	this.sumcap = this.mather.frequencyCap*255;
+	this.maxRadius = 800;
 }
 
 Basic.prototype.resize = function(){
 	this.ctx.clearRect(0,0,window.innerWidth, window.innerHeight );
 	this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);	
 };
+
+
+Basic.COLOR_THEMES = {
+	fire: [
+		[255,250,0],
+		[235,120,0],
+		[200,0,0]
+	],
+	ultraviolet: [
+		[180,30,255],
+		[100,20,255],
+		[50,10,255]
+	]
+};
+
 
 Basic.prototype.frame = function(timestamp){	
 	var blue=0,green=0,red=0;
@@ -38,15 +54,19 @@ Basic.prototype.frame = function(timestamp){
 	//this.ctx.clearRect(0,0,window.innerWidth, window.innerHeight );	
 	this.ctx.rotate(0.003);
 	
-	var radmult = 160/sum;
+	
+	var radmult = (this.maxRadius/(this.sumcap));
 	var sixrad = blue*radmult;
 	var tenrad = green*radmult;
 	var forrad = red*radmult;
-	var supermax = Math.max(max, 200);
 	var alpha = Math.max( ((max-min))/255, 0.1 );
-	this.line(-this.canvas.width/5, this.canvas.height/5,   1+sixrad, this.rgba(0,supermax,supermax,alpha));
-	this.line(-this.canvas.width/10, this.canvas.height/10, 1+tenrad, this.rgba(supermax,0,supermax,alpha));
-	this.line(-this.canvas.width/40, this.canvas.height/40, 1+forrad, this.rgba(supermax,supermax,0,alpha));
+	
+	var theme = Basic.COLOR_THEMES.ultraviolet;
+	this.line(0,0,this.maxRadius, "#000000");
+	this.line(0, -this.canvas.height*0.06,	1+forrad, this.rgba(theme[0][0],theme[0][1],theme[0][2],alpha));
+	this.line(0, -this.canvas.height*0.24,	1+tenrad, this.rgba(theme[1][0],theme[1][1],theme[2][2],alpha));
+	this.line(0, -this.canvas.height*0.48,	1+sixrad, this.rgba(theme[2][0],theme[2][1],theme[1][2],alpha));
+	
 	
 	this.lastsum = sum;
 };
