@@ -168,7 +168,7 @@ input[type=range] {
 }
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    background-color: #C9F;
+    background-color: #CCC;
     width: 8px;
     height: 14px;
 }
@@ -176,7 +176,7 @@ input[type="range"]::-webkit-slider-thumb {
 // Moz
 input[type=range]::-moz-range-track {
     -moz-appearance: none;
-    background-color: #333r;
+    background-color: #333;
     height: 16px;
     cursor: ew-resize;
     margin: 0px 2px;
@@ -184,7 +184,7 @@ input[type=range]::-moz-range-track {
 }
 input[type="range"]::-moz-range-thumb {
     -moz-appearance: none;
-    background-color: #C9F;
+    background-color: #CCC;
     width: 8px;
     height: 14px;
     padding:0;
