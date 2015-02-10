@@ -1,31 +1,24 @@
-
-window.requestAnimationFrame = 
-		window.requestAnimationFrame || 
-		window.webkitRequestAnimationFrame || 
-		window.mozRequestAnimationFrame ||
-		window.msRequestAnimationFrame;
-		
-window.AudioContext = 
-		window.AudioContext || 
-		window.webkitAudioContext;
-
-if( !window.requestAnimationFrame || !window.AudioContext ){
-	alert("It looks like your browser doesn't support this application. Please try a more modern Browser.");
-}
-
-
-
-
 var Audorialis = function(){
 	this.acquireDomControls();
 	this.instantiateAudioSystem();
 	
-	var lastSong = localStorage.getItem("lastSong");
-	if( lastSong ){
-		this.fetchMusicSource(lastSong);
-	} else {
-		this.fetchMusicSource('music/Seabound.mp3');
+	var playlist;
+	if( window.localStorage ){
+		playlist = window.localStorage.getItem("playlist");
 	}
+	if( playlist ){
+		this.playlist = JSON.parse(playlist);
+	} else {
+		this.playlist = [
+			{ 
+				name: 'Seabound',
+				url: 'music/Seabound.mp3',
+				type: 'URL'
+			}
+		];
+	}
+	
+	this.initPlaylist();
 	
 	this.setVisualiser('Basic');
 };
@@ -39,7 +32,7 @@ Audorialis.prototype.acquireDomControls = function(){
 		file: document.getElementById("file"),
 		path: document.getElementById("path")
 	};
-	this.playlist = document.getElementById("playlist");
+	this.playlistView = document.getElementById("playlist");
 	
 	var self = this;
 	this.controls.play.onclick = function(){
@@ -50,9 +43,13 @@ Audorialis.prototype.acquireDomControls = function(){
 	};
 	this.controls.mute.onclick = function(){
 		if( self.muted ){
+			this.classList.remove("fa-volume-off");
+			this.classList.add("fa-volume-up");
 			self.controls.gain.value = self.unmuteLevel;
 			self.muted = false;
 		} else {
+			this.classList.remove("fa-volume-up");
+			this.classList.add("fa-volume-off");
 			self.unmuteLevel = self.gain.gain.value;
 			self.controls.gain.value = 0;
 			self.muted = true;
@@ -60,7 +57,19 @@ Audorialis.prototype.acquireDomControls = function(){
 		self.controls.gain.onchange();
 	};
 	this.controls.file.onchange = function(){
-		self.parseMusicSource(this);
+		for( var i=0; i< (this.files || []).length; i++ ){
+			var fileObj = this.files[i];
+			var songObject = {
+				file: fileObj,
+				name: fileObj.name,
+				path: fileObj.filename,
+				type: 'FILE'
+			};
+			self.parseMusicSource(songObject, function(){
+				self.playlist.push(songObject);
+				window.localStorage.setItem("playlist",JSON.stringify(self.playlist));
+			});
+		}
 	};
 	
 	var urlPop = document.getElementById("urlPop");
@@ -68,7 +77,15 @@ Audorialis.prototype.acquireDomControls = function(){
 	document.getElementById("urlForm").onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); return false; };
 	var urlInput = document.getElementById("urlInput");
 	document.getElementById("urlSubmit").onclick = function(ev){ 
-		self.fetchMusicSource(urlInput.value);
+		var songObject = {
+			url: urlInput.value,
+			name: urlInput.value,
+			type: 'URL'
+		};
+		self.fetchMusicSource(songObject, function(){
+			self.playlist.push(songObject);
+			window.localStorage.setItem("playlist",JSON.stringify(self.playlist));
+		});
 		urlPop.style.display = 'none';
 	};
 	this.controls.path.onclick = function(){
@@ -84,7 +101,7 @@ Audorialis.prototype.instantiateAudioSystem = function(){
 	this.leftOff = 0;
 	this.analyser = this.ctx.createAnalyser();
 	this.analyser.fftSize = 256;
-	this.gain = this.ctx.createGainNode();
+	this.gain = this.ctx.createGain();
 	this.gain.gain.value = 0.5;
 	
 	this.audioMather = new AudioMather(this.analyser);
@@ -96,27 +113,53 @@ Audorialis.prototype.instantiateAudioSystem = function(){
 
 
 
-Audorialis.prototype.fetchMusicSource = function( url ){	
+Audorialis.prototype.initPlaylist = function(){
+	var self = this;
+	for( var i in this.playlist ){
+		var songObject = this.playlist[i];
+		var callback;
+		if( i === "0" ){
+			callback = function(){ 
+				self.playMusicSource(songObject);
+			};
+		}
+		if( songObject.type === "URL" ){
+			this.fetchMusicSource(songObject, callback);
+		} else if( songObject.type === "FILE" ){
+			this.parseMusicSource(songObject, callback);
+		}
+	}
+};
+
+Audorialis.prototype.fetchMusicSource = function( songObject, callback ){	
 	var self = this;
 	
+	songObject.view = document.createElement("div");
+	songObject.view.style.color = "#AAA";
+	songObject.view.innerHTML = "Loading Song...";
+	this.playlistView.appendChild(songObject.view);
+	
     var request = new XMLHttpRequest();
-    request.open("GET", url, true);
+    request.open("GET", songObject.url, true);
     request.responseType = "arraybuffer";
     request.onload = function() {
         self.ctx.decodeAudioData(
             request.response,
-            function(buffer) { 
-				self.buffer = buffer;
-				self.musicSource.buffer = buffer;
-				self.playlist.innerHTML = url;
-				if( self.playing ){
-					self.playpause();
+            function(buffer) {
+				songObject.buffer = buffer;
+				songObject.view.innerHTML = songObject.url;
+				songObject.view.style.color = "#CCC";
+				songObject.view.onclick = function(){
+					self.playMusicSource(songObject);
+				};
+				if( callback ){
+					callback(songObject);
 				}
-				self.leftOff = 0;
-				localStorage.setItem("lastSong", url);
             },
             function() { 
-				alert(url+" Is Invalid. Please Try Again"); 
+				alert(songObject.url+" Is Invalid. Please Try Again"); 
+				songObject.view.innerHTML = "Could Not Load Song";
+				songObject.view.style.color = "red";
 			}
         );
     };
@@ -128,24 +171,35 @@ Audorialis.prototype.fetchMusicSource = function( url ){
 	}
 };
 
-Audorialis.prototype.parseMusicSource = function( inputel ){
-	var file = inputel.files[0];
+Audorialis.prototype.parseMusicSource = function( songObject, callback ){
 	var self = this;
+	
+	songObject.view = document.createElement("div");
+	songObject.view.style.color = "#AAA";
+	songObject.view.innerHTML = "Loading Song...";
+	this.playlistView.appendChild(songObject.view);
+	
+	var file = songObject.file;
+	
 	var reader = new FileReader();
 	reader.onload = function() { 
 		self.ctx.decodeAudioData(
 			this.result, 
 			function(buffer){
-				self.buffer = buffer;
-				self.musicSource.buffer = buffer;
-				self.playlist.innerHTML = "<div>"+file.name+"</div>";
-				if( self.playing ){
-					self.playpause();
+				songObject.buffer = buffer;
+				songObject.view.style.color = "#CCC";
+				songObject.view.innerHTML = file.name;
+				songObject.view.onclick = function(){
+					self.playMusicSource(songObject);
+				};
+				if( callback ){
+					callback(songObject);
 				}
-				self.leftOff = 0;
 			},
 			function(){
-				alert(file.name+" Is Invalid. Please Try Again"); 
+				alert(file.name+" Is Invalid. Please Try Again");
+				songObject.view.innerHTML = "Could Not Load Song";
+				songObject.view.style.color = "red";
 			});
 	};
 	
@@ -155,6 +209,19 @@ Audorialis.prototype.parseMusicSource = function( inputel ){
 		alert(file+" Is Invalid. Please Try Again"); 
 	}
     
+};
+
+
+Audorialis.prototype.playMusicSource = function( songObject ){
+	if( this.currentSong ){
+		this.currentSong.view.style.color = "#CCC";
+	}
+	this.currentSong = songObject;
+	this.currentSong.view.style.color = "#FFF";
+	
+	this.pause();
+	this.leftOff = 0;
+	this.play();
 };
 
 
@@ -215,7 +282,7 @@ Audorialis.prototype.loadVisualiser = function(handle){
 
 
 Audorialis.prototype.readyToPlay = function(){
-	if( !this.buffer ){
+	if( !this.currentSong || !this.currentSong.buffer ){
 		console.error("Music Buffer Needed");
 	} else if ( !this.visualiser ) {
 		console.error("Visualiser Needed");
@@ -230,26 +297,46 @@ Audorialis.prototype.readyToPlay = function(){
 
 
 Audorialis.prototype.playpause = function(){
+	 if( this.playing ){
+		 this.pause();
+	 } else {
+		 this.play();
+	 }
+};
+
+
+Audorialis.prototype.pause = function(){
 	if( this.playing ){
 		this.leftOff = this.leftOff + (this.ctx.currentTime - this.startCtxTime);
 		this.startCtxTime = null;
 		
 		this.musicSource.stop(0);
 		this.musicSource.disconnect(0);
-
-		this.musicSource = this.ctx.createBufferSource();
-		this.musicSource.buffer = this.buffer;
-		this.musicSource.connect(this.analyser);
+		this.musicSource = null;
+		
+		this.controls.play.classList.remove("fa-pause");
+		this.controls.play.classList.add("fa-play");
 		
 		this.playing = false;
-	} else {
+	}
+};
+
+Audorialis.prototype.play = function(){
+	if( !this.playing ) {
 		if( !this.readyToPlay() ){ return; }
+		this.musicSource = this.ctx.createBufferSource();
+		this.musicSource.buffer = this.currentSong.buffer;
+		this.musicSource.connect(this.analyser);
 		this.musicSource.start(0, this.leftOff);
 		this.startCtxTime = this.ctx.currentTime;
+	
+		this.controls.play.classList.remove("fa-play");
+		this.controls.play.classList.add("fa-pause");
 		
 		this.playing = true;
 	}
 };
+
 
 Audorialis.prototype.frame = function( timestamp ){
 	if( !this.animating ){
