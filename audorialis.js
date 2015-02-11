@@ -146,6 +146,7 @@ Audorialis.prototype.fetchMusicSource = function( songObject, callback ){
         self.ctx.decodeAudioData(
             request.response,
             function(buffer) {
+				// Save as a FileSystem API File, and reference that file. Don't keep several Megs in memory
 				songObject.buffer = buffer;
 				songObject.view.innerHTML = songObject.url;
 				songObject.view.style.color = "#CCC";
@@ -186,6 +187,7 @@ Audorialis.prototype.parseMusicSource = function( songObject, callback ){
 		self.ctx.decodeAudioData(
 			this.result, 
 			function(buffer){
+				// Save as a FileSystem API File, and reference that file. Don't keep several Megs in memory
 				songObject.buffer = buffer;
 				songObject.view.style.color = "#CCC";
 				songObject.view.innerHTML = file.name;
