@@ -2,23 +2,35 @@ var Audorialis = function(){
 	this.acquireDomControls();
 	this.instantiateAudioSystem();
 	
+	SongObject.setup( {
+		context: this.ctx,
+		player: this.playMusicSource.bind(this),
+		container: document.getElementById("playlist")
+	});
+	
 	var playlist;
 	if( window.localStorage ){
 		playlist = window.localStorage.getItem("playlist");
 	}
 	if( playlist ){
-		this.playlist = JSON.parse(playlist);
+		this.marshalPlaylist = JSON.parse(playlist);
+		this.playlist = [];
+		for( var i in this.marshalPlaylist ){
+			var playlistItem = this.marshalPlaylist[i];
+			if( playlistItem.type === "URL" ){
+				this.playlist.push( new SongObject(playlistItem) );
+			}
+		}
 	} else {
-		this.playlist = [
-			{ 
+		var firstSong = new SongObject({ 
 				name: 'Seabound',
 				url: 'music/Seabound.mp3',
 				type: 'URL'
-			}
-		];
+			});
+		this.playlist = [ firstSong ];
+		this.marshalPlaylist = [ firstSong.marshal() ];
 	}
-	
-	this.initPlaylist();
+	this.playlist[0].run();
 	
 	this.setVisualiser('Basic');
 };
@@ -59,16 +71,18 @@ Audorialis.prototype.acquireDomControls = function(){
 	this.controls.file.onchange = function(){
 		for( var i=0; i< (this.files || []).length; i++ ){
 			var fileObj = this.files[i];
-			var songObject = {
+			var songObject = new SongObject({
 				file: fileObj,
 				name: fileObj.name,
 				path: fileObj.filename,
-				type: 'FILE'
-			};
-			self.parseMusicSource(songObject, function(){
-				self.playlist.push(songObject);
-				window.localStorage.setItem("playlist",JSON.stringify(self.playlist));
-			});
+				type: 'FILE',
+				ctx:  self.ctx
+			}, self.playMusicSource);
+			
+			self.playlistView.appendChild(songObject.view);
+			self.marshalPlaylist.push(songObject.marshal());
+			self.playlist.push(songObject);
+			window.localStorage.setItem("playlist",JSON.stringify(self.marshalPlaylist));
 		}
 	};
 	
@@ -77,15 +91,18 @@ Audorialis.prototype.acquireDomControls = function(){
 	document.getElementById("urlForm").onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); return false; };
 	var urlInput = document.getElementById("urlInput");
 	document.getElementById("urlSubmit").onclick = function(ev){ 
-		var songObject = {
-			url: urlInput.value,
+		var songObject = new SongObject({
+			url:  urlInput.value,
 			name: urlInput.value,
-			type: 'URL'
-		};
-		self.fetchMusicSource(songObject, function(){
-			self.playlist.push(songObject);
-			window.localStorage.setItem("playlist",JSON.stringify(self.playlist));
-		});
+			type: 'URL',
+			ctx:  self.ctx
+		}, self.playMusicSource);
+		
+		self.playlistView.appendChild(songObject.view);
+		self.marshalPlaylist.push(songObject.marshal());
+		self.playlist.push(songObject);
+		window.localStorage.setItem("playlist",JSON.stringify(self.marshalPlaylist));
+		
 		urlPop.style.display = 'none';
 	};
 	this.controls.path.onclick = function(){
@@ -113,105 +130,6 @@ Audorialis.prototype.instantiateAudioSystem = function(){
 
 
 
-Audorialis.prototype.initPlaylist = function(){
-	var self = this;
-	for( var i in this.playlist ){
-		var songObject = this.playlist[i];
-		var callback;
-		if( i === "0" ){
-			callback = function(){ 
-				self.playMusicSource(songObject);
-			};
-		}
-		if( songObject.type === "URL" ){
-			this.fetchMusicSource(songObject, callback);
-		} else if( songObject.type === "FILE" ){
-			this.parseMusicSource(songObject, callback);
-		}
-	}
-};
-
-Audorialis.prototype.fetchMusicSource = function( songObject, callback ){	
-	var self = this;
-	
-	songObject.view = document.createElement("div");
-	songObject.view.style.color = "#AAA";
-	songObject.view.innerHTML = "Loading Song...";
-	this.playlistView.appendChild(songObject.view);
-	
-    var request = new XMLHttpRequest();
-    request.open("GET", songObject.url, true);
-    request.responseType = "arraybuffer";
-    request.onload = function() {
-        self.ctx.decodeAudioData(
-            request.response,
-            function(buffer) {
-				// Save as a FileSystem API File, and reference that file. Don't keep several Megs in memory
-				songObject.buffer = buffer;
-				songObject.view.innerHTML = songObject.url;
-				songObject.view.style.color = "#CCC";
-				songObject.view.onclick = function(){
-					self.playMusicSource(songObject);
-				};
-				if( callback ){
-					callback(songObject);
-				}
-            },
-            function() { 
-				alert(songObject.url+" Is Invalid. Please Try Again"); 
-				songObject.view.innerHTML = "Could Not Load Song";
-				songObject.view.style.color = "red";
-			}
-        );
-    };
-	
-	try{
-		request.send();
-	} catch(err) { 
-		alert(url+" Is Invalid. Please Try Again"); 
-	}
-};
-
-Audorialis.prototype.parseMusicSource = function( songObject, callback ){
-	var self = this;
-	
-	songObject.view = document.createElement("div");
-	songObject.view.style.color = "#AAA";
-	songObject.view.innerHTML = "Loading Song...";
-	this.playlistView.appendChild(songObject.view);
-	
-	var file = songObject.file;
-	
-	var reader = new FileReader();
-	reader.onload = function() { 
-		self.ctx.decodeAudioData(
-			this.result, 
-			function(buffer){
-				// Save as a FileSystem API File, and reference that file. Don't keep several Megs in memory
-				songObject.buffer = buffer;
-				songObject.view.style.color = "#CCC";
-				songObject.view.innerHTML = file.name;
-				songObject.view.onclick = function(){
-					self.playMusicSource(songObject);
-				};
-				if( callback ){
-					callback(songObject);
-				}
-			},
-			function(){
-				alert(file.name+" Is Invalid. Please Try Again");
-				songObject.view.innerHTML = "Could Not Load Song";
-				songObject.view.style.color = "red";
-			});
-	};
-	
-	try{
-		reader.readAsArrayBuffer(file);
-	} catch(err) { 
-		alert(file+" Is Invalid. Please Try Again"); 
-	}
-    
-};
 
 
 Audorialis.prototype.playMusicSource = function( songObject ){
@@ -321,6 +239,12 @@ Audorialis.prototype.pause = function(){
 		
 		this.playing = false;
 	}
+};
+
+Audorialis.prototype.stop = function(){
+	this.pause();
+	delete this.currentSong.buffer; // free memory
+	this.currentSong = null;
 };
 
 Audorialis.prototype.play = function(){

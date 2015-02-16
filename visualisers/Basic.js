@@ -61,7 +61,7 @@ Basic.prototype.frame = function(timestamp){
 	var forrad = red*radmult;
 	var alpha = Math.max( ((max-min))/255, 0.1 );
 	
-	var theme = Basic.COLOR_THEMES.ultraviolet;
+	var theme = Basic.COLOR_THEMES.fire;
 	this.line(0,0,this.maxRadius, "#000000");
 	this.line(0, -this.canvas.height*0.04,	1+forrad, this.rgba(theme[0][0],theme[0][1],theme[0][2],alpha));
 	this.line(0, -this.canvas.height*0.24,	1+tenrad, this.rgba(theme[1][0],theme[1][1],theme[2][2],alpha));
